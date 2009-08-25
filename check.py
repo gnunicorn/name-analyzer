@@ -145,24 +145,14 @@ def sort_names(names):
         names.sort()
     return results
 
+def small_analyzis(names_by_letter, popular_by_letter, local_count, popular_count):
 
-def test():
-    names = get_list_of_names()
-    #names.append("Ben")
-    local_count = len(names)
-    names_by_letter = sort_names(names)
-
-    popular_names = most_popular_10_names_of_the_last_5_decades.split()
-    popular_count = len(popular_names)
-    popular_by_letter = sort_names(popular_names)
-
-    print "L\tlocal\t\tgermany wide\t\tadvice"
-
-    a_local_percent = local_count / 100.
-    a_popular_percent = popular_count / 100.
+    a_local_percent = 100. / local_count
+    a_popular_percent = 100. / popular_count
 
     popular_relatives = []
     local_relatives = []
+
 
     for letter in "abcdefghijklmnopqrstuvwxyz":
         try:
@@ -185,12 +175,23 @@ def test():
         popular_relatives.append((rel_pop, letter))
 
 
-        advice = ''
+        print "%s\t%s (%d%%)\t\t%s (%d%%)" % (letter, cur_len, rel_cur,
+                pop_len, rel_pop)
 
-        print "%s\t%s (%s%%)\t\t%s (%s%%)\t\t%s" % (letter, cur_len, rel_cur,
-                pop_len, rel_pop, advice)
+    return local_relatives, popular_relatives
 
 
+def test():
+    names = get_list_of_names()
+    popular_names = most_popular_10_names_of_the_last_5_decades.split()
+    analyse(names, popular_names)
+    names.add("Benjamin")
+    print "*" * 20
+    print "Now once again, adding ben...."
+    print "*" * 20
+    analyse(names, popular_names)
+
+def graph_urls(local_relatives, popular_relatives):
     url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg&chl=a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
 
     print  "want a nice graph? Go here:", url
@@ -204,7 +205,36 @@ def test():
     print  "want to see the ...", url
 
 
+def analyse(names, popular_names):
+    #names.append("Ben")
+    local_count = len(names)
+    names_by_letter = sort_names(names)
 
-    print "so the order should be:\n", ",".join([x[1] for x in popular_relatives if x[0] > 0])
-    print "but here it is:\n", " ".join([x[1] for x in local_relatives if x[0] > 0])
+    popular_count = len(popular_names)
+    popular_by_letter = sort_names(popular_names)
+
+    print "L\tlocal\t\tgermany wide"
+    local, popular = small_analyzis(names_by_letter, popular_by_letter,
+            local_count, popular_count)
+
+    graph_urls(local, popular)
+
+    print "analyzing intersection .........."
+
+    intersected_by_letter = {}
+    intersected_count = 0
+    for letter, names in names_by_letter.iteritems():
+        try:
+            inter = set(names).intersection(set(popular_by_letter[letter]))
+            intersected_count += len(inter)
+            intersected_by_letter[letter] = inter
+        except KeyError:
+            intersected_by_letter[letter] = []
+
+    local, popular = small_analyzis(intersected_by_letter, popular_by_letter,
+            intersected_count, popular_count)
+
+    graph_urls(local, popular)
+
+
 
