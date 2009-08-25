@@ -69,7 +69,6 @@ Ursula
 Uta
 Vanessa
 Yvonne 	
-Jungennamen
 Alexander
 Andreas
 Benjamin
@@ -130,9 +129,8 @@ Wolfgang
 def get_list_of_names():
     # reading the header I know that you are utf-8. Might has to be made
     # dynamic later but for now hard-coding should just work.
-    return re.findall("\<span\>(.*?)\<\/span\>",
-            urllib2.urlopen("http://www.ableton.com/about-ableton").read())
-
+    return set([x for x in re.findall("\<span\>(.*?)\<\/span\>",
+            urllib2.urlopen("http://www.ableton.com/about-ableton").read()) ])
 
 def sort_names(names):
     results = dict()
@@ -192,12 +190,21 @@ def test():
         print "%s\t%s (%s%%)\t\t%s (%s%%)\t\t%s" % (letter, cur_len, rel_cur,
                 pop_len, rel_pop, advice)
 
+
+    url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg&chl=a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
+
+    print  "want a nice graph? Go here:", url
     local_relatives.sort()
     popular_relatives.sort()
 
     local_relatives.reverse()
     popular_relatives.reverse()
 
-    print "so the order should be:\n", " ".join([x[1] for x in popular_relatives if x[0] > 0])
+    url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
+    print  "want to see the ...", url
+
+
+
+    print "so the order should be:\n", ",".join([x[1] for x in popular_relatives if x[0] > 0])
     print "but here it is:\n", " ".join([x[1] for x in local_relatives if x[0] > 0])
 
