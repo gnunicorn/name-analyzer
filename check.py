@@ -150,6 +150,7 @@ def sort_names(names):
 
 def test():
     names = get_list_of_names()
+    #names.append("Ben")
     local_count = len(names)
     names_by_letter = sort_names(names)
 
@@ -161,6 +162,10 @@ def test():
 
     a_local_percent = local_count / 100.
     a_popular_percent = popular_count / 100.
+
+    popular_relatives = []
+    local_relatives = []
+
     for letter in "abcdefghijklmnopqrstuvwxyz":
         try:
             current = names_by_letter[letter]
@@ -178,21 +183,21 @@ def test():
         rel_cur = cur_len * a_local_percent
         rel_pop = pop_len * a_popular_percent
 
+        local_relatives.append((rel_cur, letter))
+        popular_relatives.append((rel_pop, letter))
+
+
         advice = ''
 
         print "%s\t%s (%s%%)\t\t%s (%s%%)\t\t%s" % (letter, cur_len, rel_cur,
                 pop_len, rel_pop, advice)
 
-def count_results(results):
-    per_letter = {}
-    count = 0
-    for letter in "abcdefghijklmnopqrstuvwxyz":
-        try:
-            num_for_letter = len(results[letter])
-            count += num_for_letter
-        except KeyError:
-            num_for_letter = 0
-        per_letter[letter] = num_for_letter
+    local_relatives.sort()
+    popular_relatives.sort()
 
-    return per_letter, count
+    local_relatives.reverse()
+    popular_relatives.reverse()
+
+    print "so the order should be:\n", " ".join([x[1] for x in popular_relatives if x[0] > 0])
+    print "but here it is:\n", " ".join([x[1] for x in local_relatives if x[0] > 0])
 
