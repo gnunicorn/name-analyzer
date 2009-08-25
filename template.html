@@ -1,17 +1,51 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<html xmlns:py="http://genshi.edgewall.org/">
   <head>
-    <title>Market analysis for ${name}</title>
+    <title>Analysis for ${name}</title>
   </head>
   <body class="index">
     <div id="header">
-			<img src="result.png" />
+			<img src="result.png" style="float:right; margin-right: 80px" />
       <h1>${name}</h1>
 			<h2>${advice}</h2>
+			<h3>Summary</h3>
+			<p>Result total Popularity<br />
+			without ${name} - with ${name}<br />
+			${without_percent}% - ${with_percent}% <br/>
+			<br />
+			With '${name}' you are <strong>${increase}%</strong> more popular than you are now.</p>
     </div>
     <p>Analysis details:</p>
 		<div id="content">
 			<div>
+				<h3> Without ${name}</h3>
+				<div class="result">
+					<ul>
+						<li py:for="line in res_without">${line}</li>
+					</ul>
+				</div>
+				<img src="without_unsorted.png" />
+				<h3> With ${name}</h3>
+				<div class="result">
+					<ul>
+						<li py:for="line in res_with">${line}</li>
+					</ul>
+				</div>
+				<img src="with_unsorted.png" />
+				<h3> Without ${name} (name intersection)</h3>
+				<div class="result">
+					<ul>
+						<li py:for="line in res_without_inter">${line}</li>
+					</ul>
+				</div>
+				<img src="without_inter_sorted.png" />
+				<h3> With ${name} (name intersection)</h3>
+				<div class="result">
+					<ul>
+						<li py:for="line in res_with_inter">${line}</li>
+					</ul>
+				</div>
+				<img src="with_inter_sorted.png" />
 			</div>
 		</div>
   </body>

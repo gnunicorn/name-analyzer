@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
+
+
 import urllib2
 import re
 import time
+import os
+
+from genshi.template import TemplateLoader
+loader=TemplateLoader(os.path.dirname(__file__), auto_reload=True)
 
 # all the 10 most popular names of the last 5 decades. take from:
 #   http://www.gfds.de/vornamen/beliebteste-vornamen/
@@ -155,7 +161,7 @@ def small_analyzis(names_by_letter, popular_by_letter, local_count, popular_coun
     popular_relatives = []
     local_relatives = []
 
-
+    res = []
     for letter in "abcdefghijklmnopqrstuvwxyz":
         try:
             current = names_by_letter[letter]
@@ -177,13 +183,22 @@ def small_analyzis(names_by_letter, popular_by_letter, local_count, popular_coun
         popular_relatives.append((rel_pop, letter))
 
 
-        print "%s\t%s (%d%%)\t\t%s (%d%%)" % (letter, cur_len, rel_cur,
-                pop_len, rel_pop)
+        res.append("%s\t%s (%d%%)\t\t%s (%d%%)" % (letter, cur_len, rel_cur,
+                pop_len, rel_pop))
 
-    return local_relatives, popular_relatives
+    return res, local_relatives, popular_relatives
+
+def render(name, context):
+    tmpl = loader.load(name)
+    return tmpl.generate(**context).render('html', doctype='html')
 
 
 def full_check(name, sleep_time):
+    try:
+        os.mkdir(name)
+    except OSError:
+        print "Maybe you already did a report for this name, didn't you?"
+        raise
     print "receiving list of names"
     time.sleep(sleep_time)
 
@@ -197,16 +212,20 @@ def full_check(name, sleep_time):
     print "direct analysis"
     time.sleep(sleep_time * 4)
 
-    intersected_count_wo = analyse(names, popular_names)
+    prefix = os.path.join(name, 'without')
+    intersected_count_wo, res_without, res_without_inter = \
+            analyse(names, popular_names, prefix)
 
-    print 
+    print
     print "*" * 20
     print "Analyzing again, this time including '%s'...." % name
     print "*" * 20
     time.sleep(sleep_time * 6)
 
+    prefix = os.path.join(name, 'with')
     names.add(name)
-    intersected_count_with = analyse(names, popular_names)
+    intersected_count_with, res_with, res_with_inter = \
+            analyse(names, popular_names, prefix)
     pop_names = len(popular_names)
     percent_per_name = 100. / pop_names
 
@@ -217,54 +236,65 @@ def full_check(name, sleep_time):
     print
     print "calculating end results"
     time.sleep(sleep_time * 4)
-    print
-    print
-    print "Result - total Popularity"
-    print "w/o %s - with %s" % (name, name)
-    print "%s%% - %s%%" % (without_percent, with_percent)
-    print
-    print "As a goom diagram:", "http://chart.apis.google.com/chart?chs=250x150&chtt=Popularity+without+and|with+%s&chbh=a&chds=%d,%d&chd=t:%s,%s&cht=gom" % (name, without_percent - 1, with_percent + 1, without_percent, with_percent)
 
-    print "-----------------------------"
-    time.sleep(sleep_time * 2)
-    print "%s%% =~ %s%% of your current popularity" % ((with_percent - without_percent), increase)
-    time.sleep(sleep_time)
+    result_url = "http://chart.apis.google.com/chart?chs=250x150&chtt=Popularity+without+and|with+%s&chbh=a&chds=%d,%d&chd=t:%s,%s&cht=gom" % (name, without_percent - 1, with_percent + 1, without_percent, with_percent)
+    download_to_file(result_url, os.path.join(name, 'result.png'))
 
-    print 
-    print "With '%s' you are %s%% more popular than you are now." % (name, increase)
-    print
-    print "Calculating advice:"
+    print "Calculating advice.."
+
     time.sleep(sleep_time * 4)
-    if increase == 0:
-        print "\tDoesn't actually matter..."
+    advice = "Doesn't actually matter..."
     if increase < 0.5:
-        print "\tDo nothing. It is not worth the trouble."
+        advice = "Do nothing. It is not worth the trouble."
     elif increase <= 1:
-        print "\tAsk him to do an internship."
+        advice = "Ask him to do an internship."
     elif increase <= 2:
-        print "\tSounds about alright. Make some tests of his skills."
+        advice = "Sounds about alright. Make some tests of his skills."
     elif increase <= 3:
-        print "\tUh.. that is good one, you should consider hireing him."
+        advice = "Uh.. that is good one, you should consider hireing him."
     elif increase <= 4:
-        print "\tYou should hire him, he is a good investment!"
+        advice = "You should hire him, he is a good investment!"
     else:
-        print "\tDUDE... WHAT ARE YOU WAITING FOR?"
+        advice = "DUDE... WHAT ARE YOU WAITING FOR?"
 
-def graph_urls(local_relatives, popular_relatives):
-    url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg&chl=a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
+    context = {
+            'name': name,
+            'advice': advice,
+            'with_percent': with_percent,
+            'without_percent': without_percent,
+            'res_with': res_with,
+            'res_with_inter': res_with_inter,
+            'res_without': res_without,
+            'res_without_inter': res_without_inter,
+            'increase': increase}
 
-    print  "want a nice graph? Go here:", url
+    path = os.path.join(name, 'index.html')
+
+    to_save = open(path, 'w')
+    to_save.write(render('template.html', context))
+    to_save.close()
+    print "Report done. Look into %s please." % path
+
+def graph_urls(local_relatives, popular_relatives, prefix=""):
+    unsorted_url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg&chl=a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
+
     local_relatives.sort()
     popular_relatives.sort()
 
     local_relatives.reverse()
     popular_relatives.reverse()
 
-    url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
-    print  "want to see the shares in comparison:", url
+    sorted_url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
+    return unsorted_url, sorted_url
 
+def download_to_file(url, filename):
+    to_save = open(filename, 'wb')
+    try:
+        to_save.write(urllib2.urlopen(url).read())
+    finally:
+        to_save.close()
 
-def analyse(names, popular_names):
+def analyse(names, popular_names, prefix):
     #names.append("Ben")
     local_count = len(names)
     names_by_letter = sort_names(names)
@@ -272,11 +302,16 @@ def analyse(names, popular_names):
     popular_count = len(popular_names)
     popular_by_letter = sort_names(popular_names)
 
-    print "L\tlocal\t\tgermany wide"
-    local, popular = small_analyzis(names_by_letter, popular_by_letter,
+    print "Analyzing"
+    res, local, popular = small_analyzis(names_by_letter, popular_by_letter,
             local_count, popular_count)
 
-    graph_urls(local, popular)
+    unsorted_url, sorted_url = graph_urls(local, popular)
+    print "downloading graphs"
+    download_to_file(unsorted_url, '%s_unsorted.png' % prefix)
+    download_to_file(sorted_url, '%s_sorted.png' % prefix)
+    print "done"
+
 
     print "analyzing intersection .........."
 
@@ -292,12 +327,16 @@ def analyse(names, popular_names):
 
     print "Number of matches", intersected_count
 
-    local, popular = small_analyzis(intersected_by_letter, popular_by_letter,
-            intersected_count, popular_count)
+    res_inter, local, popular = small_analyzis(intersected_by_letter,
+            popular_by_letter, intersected_count, popular_count)
 
-    graph_urls(local, popular)
+    unsorted_url, sorted_url = graph_urls(local, popular)
+    print "downloading graphs"
+    download_to_file(unsorted_url, '%s_inter_unsorted.png' % prefix)
+    download_to_file(sorted_url, '%s_inter_sorted.png' % prefix)
+    print "done"
 
-    return intersected_count
+    return intersected_count, res, res_inter
 
 if __name__ == '__main__':
     import sys
@@ -307,5 +346,5 @@ if __name__ == '__main__':
 
     name = sys.argv[1]
     print "Checking", name
-    full_check(name, 0.5)
+    full_check(name, 0.)
 
