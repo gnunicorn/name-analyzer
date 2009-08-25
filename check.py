@@ -222,14 +222,18 @@ def full_check(name, sleep_time):
     print "Result - total Popularity"
     print "w/o %s - with %s" % (name, name)
     print "%s%% - %s%%" % (without_percent, with_percent)
+    print
+    print "As a goom diagram:", "http://chart.apis.google.com/chart?chs=250x150&chtt=Popularity+without+and|with+%s&chbh=a&chds=%d,%d&chd=t:%s,%s&cht=gom" % (name, without_percent - 1, with_percent + 1, without_percent, with_percent)
+
     print "-----------------------------"
     time.sleep(sleep_time * 2)
     print "%s%% =~ %s%% of your current popularity" % ((with_percent - without_percent), increase)
-    print
     time.sleep(sleep_time)
+
+    print 
     print "With '%s' you are %s%% more popular than you are now." % (name, increase)
     print
-    print "Advice:"
+    print "Calculating advice:"
     time.sleep(sleep_time * 4)
     if increase == 0:
         print "\tDoesn't actually matter..."
