@@ -184,12 +184,29 @@ def small_analyzis(names_by_letter, popular_by_letter, local_count, popular_coun
 def test():
     names = get_list_of_names()
     popular_names = most_popular_10_names_of_the_last_5_decades.split()
-    analyse(names, popular_names)
+    intersected_count_wo = analyse(names, popular_names)
     names.add("Benjamin")
     print "*" * 20
     print "Now once again, adding ben...."
     print "*" * 20
-    analyse(names, popular_names)
+    intersected_count_with = analyse(names, popular_names)
+    pop_names = len(popular_names)
+    percent_per_name = 100. / pop_names
+
+    without_percent = intersected_count_wo * percent_per_name
+    with_percent = intersected_count_with * percent_per_name
+    increase = (100 / without_percent * with_percent) - 100
+    print
+    print
+    print "Result - total Popularity"
+    print "w/o Benjamin - with Benjamin"
+    print "%s%% - %s%%" % (without_percent, with_percent)
+    print "-----------------------------"
+    print "%s%% =~ %s%% of your current popularity" % ((with_percent - without_percent), increase)
+    print
+    print "With 'Benjamin' you are %s%% more popular than you are now." %  increase
+    print "You should hire him, he is a good investment!"
+
 
 def graph_urls(local_relatives, popular_relatives):
     url = "http://chart.apis.google.com/chart?chs=900x200&chbh=a&chds=0,25&chco=4d89f9,C6D9fd&chd=t:%s|%s&cht=bvg&chl=a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z" % (','.join([str(x[0]) for x in popular_relatives]), ",".join([str(x[0]) for x in local_relatives]))
@@ -231,10 +248,14 @@ def analyse(names, popular_names):
         except KeyError:
             intersected_by_letter[letter] = []
 
+    print "Number of matches", intersected_count
+
     local, popular = small_analyzis(intersected_by_letter, popular_by_letter,
             intersected_count, popular_count)
 
     graph_urls(local, popular)
+
+    return intersected_count
 
 
 
